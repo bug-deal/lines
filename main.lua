@@ -1,16 +1,23 @@
+function lineColor1()
+  return 230, 230, 230
+end
+
+function lineColor2()
+  return 20, 20, 20
+end
+
 function love.load()
   canvas_w = 200
   canvas_h = 200
 
   scale = 4
-  delay = 4 / 1000 --ms between individual lines
 
   window_w = scale * canvas_w
   window_h = scale * canvas_h
 
   halted = true
 
-  love.window.setMode(window_w, window_h)
+  love.window.setMode(window_w, window_h, {borderless = true})
   love.graphics.setBackgroundColor(128, 128, 128)
 
   canvas = love.graphics.newCanvas()
@@ -37,27 +44,6 @@ function copyPoint(p)
   return {x = p.x, y = p.y}
 end
 
-function randomEdgePoint()
-  local randPoint = randomPoint()
-
-  return randomFrom(
-    -- top edge
-    { x = randPoint.x, y = 0 },
-    -- right edge
-    { x = canvas_w, y = randPoint.y },
-    -- bottom edge
-    { x = randPoint.x, y = canvas_h },
-    -- left edge
-    { x = 0, y = randPoint.y }
-  )
-end
-
-function randomFrom(...)
-  local numArgs = select('#', ...)
-  local index = love.math.random(1, numArgs)
-  return ({...})[index]
-end
-
 function randomizeMotion()
   local maxSpeed = 12
 
@@ -77,11 +63,11 @@ function drawLines(new_origin)
   end
 end
 
-function incrementEdge()
+function incrementEdge(point)
   -- there's probably a way better way to write this
   local on_edge = nil
-  local curr_x = edge_current.x
-  local curr_y = edge_current.y
+  local curr_x = point.x
+  local curr_y = point.y
 
   if curr_x <= 0 then
     if curr_y <= 0 then
@@ -106,22 +92,18 @@ function incrementEdge()
   end
 
   if on_edge == 'top' then
-    edge_current.x = curr_x + 1
-    edge_current.y = 0
+    point.x = curr_x + 1
+    point.y = 0
   elseif on_edge == 'right' then
-    edge_current.x = canvas_w
-    edge_current.y = curr_y + 1
+    point.x = canvas_w
+    point.y = curr_y + 1
   elseif on_edge == 'bottom' then
-    edge_current.x = curr_x - 1
-    edge_current.y = canvas_h
+    point.x = curr_x - 1
+    point.y = canvas_h
   else -- left
-    edge_current.x = 0
-    edge_current.y = curr_y - 1
+    point.x = 0
+    point.y = curr_y - 1
   end
-
-  info = 'edge: '..on_edge..
-    '\nfrom: '..curr_x..', '..curr_y..
-    '\nto:'..(edge_current.x)..', '..(edge_current.y)
 end
 
 function pointEquals(p1, p2)
@@ -130,10 +112,10 @@ end
 
 function switchColor()
   if black then
-    love.graphics.setColor(255, 255, 255)
+    love.graphics.setColor(lineColor1())
     black = false
   else
-    love.graphics.setColor(0, 0, 0)
+    love.graphics.setColor(lineColor2())
     black = true
   end
 end
@@ -141,7 +123,7 @@ end
 function drawNextLine()
   if halted then return end
 
-  incrementEdge()
+  incrementEdge(edge_current)
   switchColor()
   canvas:renderTo(function ()
     love.graphics.line(
@@ -177,24 +159,11 @@ function love.update(dt)
   drawLines{x = x, y = y}
 end
 
-function outputDebugInfo()
-  love.graphics.setColor(255, 255, 255)
-  love.graphics.rectangle('fill', 10, 10, 300, 100)
-
-  love.graphics.setColor(0, 0, 0)
-  love.graphics.print(
-    'Origin: '..(origin.x)..', '..(origin.y)..
-    '\nEdge: '..(edge_current.x)..', '..(edge_current.y)..
-    '\nInfo: '..(info or '')
-  , 20, 20)
-end
-
 function love.draw()
   -- the documentation doesn't explicitly mention this:
   -- by default, current color multiplies the canvas when drawn
   love.graphics.setColor(255, 255, 255)
   love.graphics.draw(canvas, 0, 0, 0, scale, scale)
-  --outputDebugInfo()
 end
 
 function love.mousepressed(mouseX, mouseY, button)
@@ -207,5 +176,9 @@ end
 function love.keypressed(key, isrepeat)
   if key == ' ' then
     randomizeMotion()
+  end
+
+  if key == 'escape' then
+    love.event.quit()
   end
 end
