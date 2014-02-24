@@ -10,3 +10,5 @@ Now that we’re in the future and it’s easy to draw all those lines very quic
 This is a [LÖVE] [1] project. I was learning LÖVE and Lua at the same time I was implementing this, so that’s my excuse for for the confused style.
 
   [1]: http://love2d.org
+
+Click to set the center somewhere. Space randomizes its motion. Escape to quit.

@@ -25,9 +25,8 @@ function love.load()
   love.graphics.setLineStyle('rough') -- unantialiased lines
   love.graphics.setLineWidth(1)
 
-  local randPoint = randomPoint()
-  x = randPoint.x
-  y = randPoint.y
+  local randP = randomPoint()
+  x, y = randP.x, randP.y
   randomizeMotion()
 
   drawLines{x = x, y = y}
@@ -35,8 +34,8 @@ end
 
 function randomPoint()
   return {
-    x = love.math.random(canvas_w - 1),
-    y = love.math.random(canvas_h - 1)
+    x = love.math.random(0, canvas_w),
+    y = love.math.random(0, canvas_h)
   }
 end
 
@@ -45,7 +44,7 @@ function copyPoint(p)
 end
 
 function randomizeMotion()
-  local maxSpeed = 12
+  local maxSpeed = 8
 
   dx = love.math.random(-maxSpeed, maxSpeed)
   dy = love.math.random(-maxSpeed, maxSpeed)
