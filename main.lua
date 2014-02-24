@@ -35,8 +35,8 @@ end
 
 function randomPoint()
   return {
-    x = love.math.random(canvas_w),
-    y = love.math.random(canvas_h)
+    x = love.math.random(canvas_w - 1),
+    y = love.math.random(canvas_h - 1)
   }
 end
 
@@ -63,46 +63,19 @@ function drawLines(new_origin)
   end
 end
 
-function incrementEdge(point)
-  -- there's probably a way better way to write this
-  local on_edge = nil
-  local curr_x = point.x
-  local curr_y = point.y
-
-  if curr_x <= 0 then
-    if curr_y <= 0 then
-      on_edge = 'top'
-    else
-      on_edge = 'left'
-    end
-  elseif curr_y <= 0 then
-    if curr_x >= canvas_w then
-      on_edge = 'right'
-    else
-      on_edge = 'top'
-    end
-  elseif curr_x >= canvas_w then
-    if curr_y >= canvas_h then
-      on_edge = 'bottom'
-    else
-      on_edge = 'right'
-    end
-  elseif curr_y >= canvas_h then
-    on_edge = 'bottom'
-  end
-
-  if on_edge == 'top' then
-    point.x = curr_x + 1
-    point.y = 0
-  elseif on_edge == 'right' then
-    point.x = canvas_w
-    point.y = curr_y + 1
-  elseif on_edge == 'bottom' then
-    point.x = curr_x - 1
-    point.y = canvas_h
-  else -- left
-    point.x = 0
-    point.y = curr_y - 1
+function incrementEdge(p)
+  if p.x <= 0 and p.y > 0 then
+    -- left edge, moving up
+    p.x, p.y = 0, p.y - 1
+  elseif p.y <= 0 and p.x < canvas_w then
+    -- top edge, moving right
+    p.x, p.y = p.x + 1, 0
+  elseif p.x >= canvas_w and p.y < canvas_h then
+    -- right edge, moving down
+    p.x, p.y = canvas_w, p.y + 1
+  else
+    -- bottom edge, moving left
+    p.x, p.y = p.x - 1, canvas_h
   end
 end
 
