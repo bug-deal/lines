@@ -63,51 +63,20 @@ function startLines(new_origin)
   canvas:clear(128, 128, 128)
 end
 
-function incrementEdge()
-  -- there's probably a way better way to write this
-  local on_edge = nil
-  local curr_x = edge_current.x
-  local curr_y = edge_current.y
-
-  if curr_x <= 0 then
-    if curr_y <= 0 then
-      on_edge = 'top'
-    else
-      on_edge = 'left'
-    end
-  elseif curr_y <= 0 then
-    if curr_x >= canvas_w then
-      on_edge = 'right'
-    else
-      on_edge = 'top'
-    end
-  elseif curr_x >= canvas_w then
-    if curr_y >= canvas_h then
-      on_edge = 'bottom'
-    else
-      on_edge = 'right'
-    end
-  elseif curr_y >= canvas_h then
-    on_edge = 'bottom'
+function incrementEdge(p)
+  if p.x <= 0 and p.y > 0 then
+    -- left edge, moving up
+    p.x, p.y = 0, p.y - 1
+  elseif p.y <= 0 and p.x < canvas_w then
+    -- top edge, moving right
+    p.x, p.y = p.x + 1, 0
+  elseif p.x >= canvas_w and p.y < canvas_h then
+    -- right edge, moving down
+    p.x, p.y = canvas_w, p.y + 1
+  else
+    -- bottom edge, moving left
+    p.x, p.y = p.x - 1, canvas_h
   end
-
-  if on_edge == 'top' then
-    edge_current.x = curr_x + 1
-    edge_current.y = 0
-  elseif on_edge == 'right' then
-    edge_current.x = canvas_w
-    edge_current.y = curr_y + 1
-  elseif on_edge == 'bottom' then
-    edge_current.x = curr_x - 1
-    edge_current.y = canvas_h
-  else -- left
-    edge_current.x = 0
-    edge_current.y = curr_y - 1
-  end
-
-  info = 'edge: '..on_edge..
-    '\nfrom: '..curr_x..', '..curr_y..
-    '\nto:'..(edge_current.x)..', '..(edge_current.y)
 end
 
 function pointEquals(p1, p2)
@@ -127,7 +96,7 @@ end
 function drawNextLine()
   if halted then return end
 
-  incrementEdge()
+  incrementEdge(edge_current)
   switchColor()
   canvas:renderTo(function ()
     love.graphics.line(
