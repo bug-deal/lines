@@ -8,7 +8,7 @@ function love.load()
   window_w = scale * canvas_w
   window_h = scale * canvas_h
 
-  halted = false
+  halted = true
 
   love.window.setMode(window_w, window_h)
   love.graphics.setBackgroundColor(128, 128, 128)
@@ -18,7 +18,12 @@ function love.load()
   love.graphics.setLineStyle('rough') -- unantialiased lines
   love.graphics.setLineWidth(1)
 
-  startLines()
+  local randPoint = randomPoint()
+  x = randPoint.x
+  y = randPoint.y
+  randomizeMotion()
+
+  drawLines{x = x, y = y}
 end
 
 function randomPoint()
@@ -53,14 +58,23 @@ function randomFrom(...)
   return ({...})[index]
 end
 
-function startLines(new_origin)
+function randomizeMotion()
+  local maxSpeed = 12
+
+  dx = love.math.random(-maxSpeed, maxSpeed)
+  dy = love.math.random(-maxSpeed, maxSpeed)
+end
+
+function drawLines(new_origin)
   halted = false
+  black = true
   origin = new_origin or randomPoint()
-  edge_start = randomEdgePoint()
+  edge_start = {x = 0, y = 0}
   edge_current = {x = edge_start.x, y = edge_start.y}
-  last_draw_time = love.timer.getTime()
   
-  canvas:clear(128, 128, 128)
+  while not halted do
+    drawNextLine()
+  end
 end
 
 function incrementEdge()
@@ -141,15 +155,26 @@ function drawNextLine()
 end
 
 function love.update(dt)
-  local since_update = love.timer.getTime() - last_draw_time
-  local lines_to_draw = math.floor(since_update / delay)
-  local spillover = since_update - (lines_to_draw * delay)
+  x = x + dx * dt
+  y = y + dy * dt
 
-  last_draw_time = love.timer.getTime() - spillover
-
-  for i = 1, lines_to_draw do
-    drawNextLine()
+  if x < 0 then
+    x = -x
+    dx = math.abs(dx)
+  elseif x >= canvas_w then
+    x = 2 * canvas_w - x
+    dx = -math.abs(dx)
   end
+
+  if y < 0 then
+    y = -y
+    dy = math.abs(dy)
+  elseif y >= canvas_h then
+    y = 2 * canvas_h - y
+    dy = -math.abs(dy)
+  end
+
+  drawLines{x = x, y = y}
 end
 
 function outputDebugInfo()
@@ -172,14 +197,15 @@ function love.draw()
   --outputDebugInfo()
 end
 
-function love.mousepressed(x, y, button)
+function love.mousepressed(mouseX, mouseY, button)
   if button == 'l' then
-    startLines{x = math.floor(x / scale), y = math.floor(y / scale)}
+    x, y = mouseX / scale, mouseY / scale
+    randomizeMotion()
   end
 end
 
 function love.keypressed(key, isrepeat)
   if key == ' ' then
-    startLines()
+    randomizeMotion()
   end
 end
