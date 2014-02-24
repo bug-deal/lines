@@ -1,22 +1,26 @@
-function lineColor1()
+function lightLineColor()
   return 230, 230, 230
 end
 
-function lineColor2()
+function darkLineColor()
   return 20, 20, 20
 end
 
 function love.load()
+  -- set up all these globals
   canvas_w = 200
   canvas_h = 200
 
   scale = 4
-
   window_w = scale * canvas_w
   window_h = scale * canvas_h
 
   halted = true
 
+  ox, oy = randomCoords() -- origin x and y
+  dx, dy = randomMotion() -- origin movement
+
+  -- set up the window and canvas
   love.window.setMode(window_w, window_h, {borderless = true})
   love.graphics.setBackgroundColor(128, 128, 128)
 
@@ -25,57 +29,61 @@ function love.load()
   love.graphics.setLineStyle('rough') -- unantialiased lines
   love.graphics.setLineWidth(1)
 
-  local randP = randomPoint()
-  x, y = randP.x, randP.y
-  randomizeMotion()
-
-  drawLines{x = x, y = y}
+  -- draw to the canvas using the starting origin
+  drawLines{x = ox, y = oy}
 end
 
-function randomPoint()
-  return {
-    x = love.math.random(0, canvas_w),
-    y = love.math.random(0, canvas_h)
-  }
+function randomCoords()
+  -- the X coordinate for the first one of these is always the same thing.
+  -- guess I need to manually seed it with something
+  return love.math.random(0, canvas_w), love.math.random(0, canvas_h)
 end
 
 function copyPoint(p)
   return {x = p.x, y = p.y}
 end
 
-function randomizeMotion()
+function randomMotion()
   local maxSpeed = 8
 
-  dx = love.math.random(-maxSpeed, maxSpeed)
-  dy = love.math.random(-maxSpeed, maxSpeed)
+  return love.math.random(-maxSpeed, maxSpeed), love.math.random(-maxSpeed, maxSpeed)
 end
 
-function drawLines(new_origin)
+function drawLines(newOrigin)
+  -- tracking all this state in globals right now
   halted = false
-  black = true
-  origin = new_origin or randomPoint()
-  edge_start = {x = 0, y = 0}
-  edge_current = {x = edge_start.x, y = edge_start.y}
+  dark = true
+  originPoint = copyPoint(newOrigin)
+  edgeStart = {x = 0, y = 0}
+  edgePoint = copyPoint(edgeStart)
   
   while not halted do
     drawNextLine()
   end
 end
 
-function incrementEdge(p)
-  if p.x <= 0 and p.y > 0 then
+function nextEdgePoint(p)
+  local ex, ey = p.x, p.y
+
+  if ex <= 0 and ey > 0 then
     -- left edge, moving up
-    p.x, p.y = 0, p.y - 1
-  elseif p.y <= 0 and p.x < canvas_w then
+    ex = 0
+    ey = ey - 1
+  elseif ey <= 0 and ex < canvas_w then
     -- top edge, moving right
-    p.x, p.y = p.x + 1, 0
-  elseif p.x >= canvas_w and p.y < canvas_h then
+    ex = ex + 1
+    ey = 0
+  elseif ex >= canvas_w and ey < canvas_h then
     -- right edge, moving down
-    p.x, p.y = canvas_w, p.y + 1
+    ex = canvas_w
+    ey = ey + 1
   else
     -- bottom edge, moving left
-    p.x, p.y = p.x - 1, canvas_h
+    ex = ex - 1
+    ey = canvas_h
   end
+
+  return {x = ex, y = ey}
 end
 
 function pointEquals(p1, p2)
@@ -83,52 +91,52 @@ function pointEquals(p1, p2)
 end
 
 function switchColor()
-  if black then
-    love.graphics.setColor(lineColor1())
-    black = false
+  dark = not dark
+
+  if dark then
+    love.graphics.setColor(darkLineColor())
   else
-    love.graphics.setColor(lineColor2())
-    black = true
+    love.graphics.setColor(lightLineColor())
   end
 end
 
 function drawNextLine()
   if halted then return end
 
-  incrementEdge(edge_current)
+  edgePoint = nextEdgePoint(edgePoint)
   switchColor()
   canvas:renderTo(function ()
     love.graphics.line(
-      origin.x, origin.y,
-      edge_current.x, edge_current.y)
+      originPoint.x, originPoint.y,
+      edgePoint.x, edgePoint.y)
   end)
 
-  if pointEquals(edge_current, edge_start) then
+  if pointEquals(edgePoint, edgeStart) then
     halted = true
   end
 end
 
 function love.update(dt)
-  x = x + dx * dt
-  y = y + dy * dt
+  ox = ox + dx * dt
+  oy = oy + dy * dt
 
-  if x < 0 then
-    x = -x
+  if ox < 0 then
+    ox = -ox
     dx = math.abs(dx)
-  elseif x >= canvas_w then
-    x = 2 * canvas_w - x
+  elseif ox >= canvas_w then
+    ox = 2 * canvas_w - ox
     dx = -math.abs(dx)
   end
 
-  if y < 0 then
-    y = -y
+  if oy < 0 then
+    oy = -oy
     dy = math.abs(dy)
-  elseif y >= canvas_h then
-    y = 2 * canvas_h - y
+  elseif oy >= canvas_h then
+    oy = 2 * canvas_h - oy
     dy = -math.abs(dy)
   end
 
-  drawLines{x = x, y = y}
+  drawLines{x = ox, y = oy}
 end
 
 function love.draw()
@@ -140,14 +148,14 @@ end
 
 function love.mousepressed(mouseX, mouseY, button)
   if button == 'l' then
-    x, y = mouseX / scale, mouseY / scale
-    randomizeMotion()
+    ox, oy = mouseX / scale, mouseY / scale
+    dx, dy = randomMotion()
   end
 end
 
 function love.keypressed(key, isrepeat)
   if key == ' ' then
-    randomizeMotion()
+    dx, dy = randomMotion()
   end
 
   if key == 'escape' then
